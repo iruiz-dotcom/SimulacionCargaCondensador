@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Simulación interactiva avanzada de la carga de un condensador ideal de placas plano-paralelas en un circuito DC. Visualización de electrones, campo eléctrico, equipotenciales y métricas en tiempo real.">
+  <meta name="keywords" content="Física, Electromagnetismo, Condensador, Campo Eléctrico, Capacitancia, Simulación HTML5, Laboratorio Virtual">
+  <meta name="author" content="Antigravity Physics Lab">
+  <title>Simulador de Carga de un Condensador Ideal | Laboratorio de Física</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">Laboratorio de Física: Carga de un Condensador Ideal</h1>
+          <p class="header-subtitle">Condensador de Placas Plano-Paralelas conectado a Fuente DC • Electrodinámica y Electrostática</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-open-theory" class="btn btn-secondary" title="Ver fundamentos teóricos y fórmulas">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <line x1="9" y1="7" x2="15" y2="7"/>
+            <line x1="9" y1="11" x2="13" y2="11"/>
+          </svg>
+          <span>Fundamentos Teóricos</span>
+        </button>
+        <button id="btn-open-quiz" class="btn btn-primary pulse-subtle" title="Comprueba tus conocimientos conceptuales">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Cuestionario Guiado</span>
+          <span class="badge" id="quiz-badge">5 Preguntas</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="main-layout">
+      <!-- Left Column: Canvas & Real-time Graph -->
+      <section class="simulation-section">
+        <!-- Canvas Status & Quick Actions Bar -->
+        <div class="sim-status-bar">
+          <div class="circuit-status-chip" id="circuit-state-badge">
+            <span class="status-dot state-open"></span>
+            <span class="status-text" id="circuit-state-text">Circuito Abierto (Sin Corriente)</span>
+          </div>
+
+          <div class="sim-quick-controls">
+            <button id="btn-toggle-switch" class="btn btn-switch btn-switch-open" title="Conectar / Desconectar interruptor">
+              <span class="switch-icon"></span>
+              <span id="btn-switch-label">Cerrar Interruptor</span>
+            </button>
+            <button id="btn-reset-charge" class="btn btn-warning" title="Descargar condensador y reiniciar simulación">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              <span>Reiniciar Carga</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Card -->
+        <div class="canvas-card">
+          <div class="canvas-viewport" id="canvas-container">
+            <canvas id="sim-canvas"></canvas>
+
+            <!-- Floating Legend / Overlay Indicators -->
+            <div class="canvas-overlay-legend">
+              <div class="legend-item">
+                <span class="legend-swatch electron-swatch">e⁻</span>
+                <span>Electrones en flujo</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch plus-swatch">+</span>
+                <span>Cargas positivas fijas</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch minus-swatch">−</span>
+                <span>Cargas negativas fijas</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-line field-line"></span>
+                <span>Líneas Campo E</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-line equipotential-line"></span>
+                <span>Equipotenciales</span>
+              </div>
+            </div>
+
+            <!-- Canvas Tooltip for dynamic hovering -->
+            <div id="canvas-tooltip" class="canvas-tooltip" style="display: none;"></div>
+          </div>
+        </div>
+
+        <!-- Real-Time Graph Section -->
+        <div class="oscilloscope-card" id="oscilloscope-container">
+          <div class="oscilloscope-header">
+            <div class="oscilloscope-title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <span>Osciloscopio en Vivo: V_C(t) y Corriente I(t)</span>
+            </div>
+            <div class="oscilloscope-legend">
+              <span class="graph-legend-item text-voltage">
+                <span class="legend-color-dot dot-voltage"></span> Voltaje V_C(t)
+              </span>
+              <span class="graph-legend-item text-current">
+                <span class="legend-color-dot dot-current"></span> Corriente I(t)
+              </span>
+              <span class="graph-legend-item text-target">
+                <span class="legend-color-dot dot-target"></span> V₀ Fuente
+              </span>
+            </div>
+          </div>
+          <div class="oscilloscope-canvas-wrapper">
+            <canvas id="graph-canvas"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar: Controls & Metrics Dashboard -->
+      <aside class="sidebar-section">
+        <!-- Interactive Sliders Card -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              <span>Parámetros Físicos del Sistema</span>
+            </h2>
+          </div>
+
+          <div class="controls-list">
+            <!-- Voltage Slider -->
+            <div class="control-group">
+              <div class="control-label-row">
+                <label for="slider-voltage" class="control-label">
+                  <span class="label-name">Voltaje de Batería (V₀)</span>
+                  <span class="label-desc">Fuerza electromotriz de la fuente DC</span>
+                </label>
+                <div class="value-badge" id="badge-voltage">6.0 V</div>
+              </div>
+              <div class="slider-wrapper">
+                <span class="slider-boundary">1 V</span>
+                <input type="range" id="slider-voltage" min="1" max="12" step="0.5" value="6.0" class="custom-slider">
+                <span class="slider-boundary">12 V</span>
+              </div>
+            </div>
+
+            <!-- Area Slider -->
+            <div class="control-group">
+              <div class="control-label-row">
+                <label for="slider-area" class="control-label">
+                  <span class="label-name">Área de las Placas (A)</span>
+                  <span class="label-desc">Superficie activa de cada armadura</span>
+                </label>
+                <div class="value-badge" id="badge-area">250 cm²</div>
+              </div>
+              <div class="slider-wrapper">
+                <span class="slider-boundary">100 cm²</span>
+                <input type="range" id="slider-area" min="100" max="500" step="10" value="250" class="custom-slider">
+                <span class="slider-boundary">500 cm²</span>
+              </div>
+            </div>
+
+            <!-- Distance Slider -->
+            <div class="control-group">
+              <div class="control-label-row">
+                <label for="slider-distance" class="control-label">
+                  <span class="label-name">Separación entre Placas (d)</span>
+                  <span class="label-desc">Distancia del dieléctrico (aire/vacío)</span>
+                </label>
+                <div class="value-badge" id="badge-distance">4.0 mm</div>
+              </div>
+              <div class="slider-wrapper">
+                <span class="slider-boundary">1 mm</span>
+                <input type="range" id="slider-distance" min="1" max="10" step="0.5" value="4.0" class="custom-slider">
+                <span class="slider-boundary">10 mm</span>
+              </div>
+            </div>
+
+            <!-- Time Speed Factor (Pedagogical adjustment) -->
+            <div class="control-group">
+              <div class="control-label-row">
+                <label class="control-label">
+                  <span class="label-name">Escala Temporal Pedagógica</span>
+                  <span class="label-desc">Ajuste de velocidad para observación microscópica</span>
+                </label>
+              </div>
+              <div class="speed-selector" id="speed-selector">
+                <button class="speed-btn active" data-speed="1.0">Normal (~3.5s)</button>
+                <button class="speed-btn" data-speed="0.5">Lento (~7s)</button>
+                <button class="speed-btn" data-speed="2.0">Rápido (~1.8s)</button>
+                <button class="speed-btn" data-speed="999" title="Carga ideal instantánea teórica">Instantáneo</button>
+              </div>
+            </div>
+
+            <!-- Visual Layer Checkboxes -->
+            <div class="layer-toggles">
+              <span class="layers-title">Capas de Visualización:</span>
+              <div class="checkbox-grid">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="layer-electrons" checked>
+                  <span class="custom-check"></span>
+                  <span>Electrones (e⁻)</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="layer-field" checked>
+                  <span class="custom-check"></span>
+                  <span>Campo Eléctrico E</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="layer-equipotentials" checked>
+                  <span class="custom-check"></span>
+                  <span>Equipotenciales</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="layer-charges" checked>
+                  <span class="custom-check"></span>
+                  <span>Cargas fijas (+ / -)</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="layer-sound" checked>
+                  <span class="custom-check"></span>
+                  <span>Audio háptico</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="layer-graph" checked>
+                  <span class="custom-check"></span>
+                  <span>Osciloscopio</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard of Real-time Metrics -->
+        <div class="panel-card metrics-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+              <span>Dashboard de Métricas en Tiempo Real</span>
+            </h2>
+          </div>
+
+          <div class="metrics-grid">
+            <!-- Capacitance Card -->
+            <div class="metric-tile" id="metric-capacitance">
+              <div class="metric-top">
+                <span class="metric-name">Capacitancia (C)</span>
+                <span class="metric-formula">ε₀ · A / d</span>
+              </div>
+              <div class="metric-value-row">
+                <span class="metric-value text-accent" id="val-capacitance">55.34</span>
+                <span class="metric-unit">pF</span>
+              </div>
+              <div class="metric-subtext">Propiedad geométrica pura</div>
+            </div>
+
+            <!-- Accumulated Charge Card -->
+            <div class="metric-tile" id="metric-charge">
+              <div class="metric-top">
+                <span class="metric-name">Carga Acumulada (Q)</span>
+                <span class="metric-formula">C · V_C(t)</span>
+              </div>
+              <div class="metric-value-row">
+                <span class="metric-value text-charge" id="val-charge">0.00</span>
+                <span class="metric-unit">pC</span>
+              </div>
+              <div class="metric-subtext" id="val-charge-max">Máx: 332.0 pC</div>
+            </div>
+
+            <!-- Measured Voltage Card -->
+            <div class="metric-tile" id="metric-voltage">
+              <div class="metric-top">
+                <span class="metric-name">Voltaje Medido (V_C)</span>
+                <span class="metric-formula">D.D.P. Placas</span>
+              </div>
+              <div class="metric-value-row">
+                <span class="metric-value text-voltage" id="val-voltage">0.00</span>
+                <span class="metric-unit">V</span>
+              </div>
+              <div class="metric-subtext" id="val-voltage-status">Equilibrio: 0.0%</div>
+            </div>
+
+            <!-- Electric Field Card -->
+            <div class="metric-tile" id="metric-field">
+              <div class="metric-top">
+                <span class="metric-name">Campo Eléctrico (E)</span>
+                <span class="metric-formula">V_C / d</span>
+              </div>
+              <div class="metric-value-row">
+                <span class="metric-value text-field" id="val-field">0.00</span>
+                <span class="metric-unit">kV/m</span>
+              </div>
+              <div class="metric-subtext">Uniforme entre placas</div>
+            </div>
+
+            <!-- Surface Charge Density Card -->
+            <div class="metric-tile" id="metric-sigma">
+              <div class="metric-top">
+                <span class="metric-name">Densidad Sup. (σ)</span>
+                <span class="metric-formula">Q / A</span>
+              </div>
+              <div class="metric-value-row">
+                <span class="metric-value text-sigma" id="val-sigma">0.00</span>
+                <span class="metric-unit">nC/m²</span>
+              </div>
+              <div class="metric-subtext">Origen del campo σ/ε₀</div>
+            </div>
+
+            <!-- Stored Energy Card -->
+            <div class="metric-tile" id="metric-energy">
+              <div class="metric-top">
+                <span class="metric-name">Energía Almacenada (U)</span>
+                <span class="metric-formula">½ · C · V_C²</span>
+              </div>
+              <div class="metric-value-row">
+                <span class="metric-value text-energy" id="val-energy">0.00</span>
+                <span class="metric-unit">nJ</span>
+              </div>
+              <div class="metric-subtext">Energía electrostática</div>
+            </div>
+          </div>
+
+          <!-- Theoretical Constant Note -->
+          <div class="permittivity-badge">
+            <span class="constant-symbol">ε₀</span>
+            <span>Permitividad del vacío/aire: <strong>8.854 × 10⁻¹² F/m</strong></span>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Modal: Evaluative Quiz -->
+    <div id="modal-quiz" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog modal-quiz-dialog">
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <div class="quiz-pill">Evaluación Formativa</div>
+            <h2 class="modal-title">Cuestionario de Comprobación Conceptualmente Guiado</h2>
+            <p class="modal-subtitle">Valida tu comprensión sobre capacitancia, campo electrostático y transporte de carga.</p>
+          </div>
+          <button class="modal-close-btn" id="btn-close-quiz" aria-label="Cerrar modal">&times;</button>
+        </div>
+
+        <div class="quiz-progress-bar-container">
+          <div class="quiz-progress-track">
+            <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+          </div>
+          <div class="quiz-progress-labels">
+            <span id="quiz-progress-text">Pregunta 1 de 5</span>
+            <span id="quiz-score-badge">Puntuación: 0 / 5</span>
+          </div>
+        </div>
+
+        <div class="modal-body" id="quiz-container">
+          <!-- Quiz questions injected dynamically by quiz.js -->
+        </div>
+
+        <div class="modal-footer quiz-footer">
+          <button id="btn-quiz-prev" class="btn btn-secondary" disabled>Anterior</button>
+          <div class="quiz-footer-actions">
+            <button id="btn-quiz-reset" class="btn btn-ghost">Reiniciar Cuestionario</button>
+            <button id="btn-quiz-next" class="btn btn-primary">Siguiente</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Theoretical Foundations -->
+    <div id="modal-theory" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog modal-theory-dialog">
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <div class="quiz-pill pill-theory">Fundamentos Físicos</div>
+            <h2 class="modal-title">Carga de un Condensador Plano-Paralelo Ideal</h2>
+            <p class="modal-subtitle">Deducción de ecuaciones, fenomenología microscópica y balance de energía.</p>
+          </div>
+          <button class="modal-close-btn" id="btn-close-theory" aria-label="Cerrar modal">&times;</button>
+        </div>
+
+        <div class="modal-body theory-content">
+          <section class="theory-section">
+            <h3>1. Geometría y Capacidad de Placas Plano-Paralelas</h3>
+            <p>
+              Un condensador plano-paralelo consta de dos placas conductoras paralelas de área <em>A</em>, separadas por una distancia <em>d</em> mucho menor que sus dimensiones laterales (<em>d ≪ √A</em>), lo que permite despreciar los efectos de borde.
+            </p>
+            <div class="equation-box">
+              C = (ε₀ · A) / d
+            </div>
+            <p>
+              Donde ε₀ = 8.854 × 10⁻¹² F/m es la permitividad del vacío. La capacidad eléctrica es una <strong>propiedad estrictamente geométrica</strong> del dispositivo: solo depende del área <em>A</em>, la distancia <em>d</em> y el medio dieléctrico existente entre ellas.
+            </p>
+          </section>
+
+          <section class="theory-section">
+            <h3>2. Campo Eléctrico Interior y Potencial</h3>
+            <p>
+              Aplicando la <strong>Ley de Gauss</strong> a una superficie cilíndrica que encierra la carga de una de las placas, el campo eléctrico en el interior viene dado por:
+            </p>
+            <div class="equation-box">
+              E = σ / ε₀ = Q / (ε₀ · A) = V_C / d
+            </div>
+            <p>
+              El campo es uniforme, perpendicular a las placas y dirigido desde la placa con potencial superior (+) hacia la placa con potencial inferior (-). Las superficies equipotenciales son planos paralelos a las armaduras.
+            </p>
+          </section>
+
+          <section class="theory-section">
+            <h3>3. Mecánica Microscópica: Transporte de Electrones</h3>
+            <p>
+              Al cerrar el interruptor, la fuente electromotriz (batería) establece una diferencia de potencial que induce un campo eléctrico dentro de los cables conductores:
+            </p>
+            <ul>
+              <li><strong>Placa positiva:</strong> La fuerza eléctrica arranca electrones libres de la placa superior, atrayéndolos hacia el borne positivo de la batería. Esto deja un exceso neto de cargas positivas fijas (iones atómicos).</li>
+              <li><strong>Paso por la batería:</strong> La energía química interna de la batería realiza trabajo contra la fuerza electrostática, desplazando los electrones del borne positivo al negativo.</li>
+              <li><strong>Placa negativa:</strong> El borne negativo repele e inyecta estos electrones hacia la placa inferior del condensador, donde se acumulan en la superficie interior debido a la atracción de la placa contraria.</li>
+            </ul>
+          </section>
+
+          <section class="theory-section">
+            <h3>4. Condición de Parada del Flujo (Equilibrio Electrostático)</h3>
+            <p>
+              A medida que la carga <em>Q(t)</em> aumenta, el condensador genera su propia diferencia de potencial contraria:
+            </p>
+            <div class="equation-box">
+              V_C(t) = Q(t) / C
+            </div>
+            <p>
+              El flujo cesa de forma natural y completa cuando la diferencia de potencial del condensador se equipara exactamente a la fuerza electromotriz de la batería:
+            </p>
+            <div class="equation-box highlight-box">
+              V_C = V₀  ⟹  I(t) = 0
+            </div>
+            <p>
+              En este punto, el campo eléctrico dentro de los conductores se anula y el sistema entra en <em>equilibrio electrostático permanente</em>.
+            </p>
+          </section>
+
+          <section class="theory-section">
+            <h3>5. Nota Pedagógica: ¿Por qué vemos un transitorio?</h3>
+            <p>
+              En un circuito estrictamente ideal sin resistencia (<em>R = 0</em>) ni inductancia (<em>L = 0</em>), la carga teórica ocurriría en un tiempo instantáneo (<em>τ = RC = 0</em>).
+              En este simulador hemos incorporado una <strong>resistencia interna pedagógica de visualización</strong> (<em>R_vis</em>) calculada para que el transitorio dure de <strong>3 a 5 segundos</strong>. Esto permite al alumno observar detalladamente el movimiento de electrones y la evolución exponencial asintótica:
+            </p>
+            <div class="equation-box">
+              V_C(t) = V₀ · (1 - e^(-t / τ)),    I(t) = (V₀ / R_vis) · e^(-t / τ)
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btn-theory-close" class="btn btn-primary">Entendido, Volver a la Simulación</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="quiz.js"></script>
+  <script src="simulation.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
